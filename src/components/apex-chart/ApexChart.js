@@ -1,8 +1,24 @@
+import { Box, Button, Modal, TextField } from '@mui/material';
 import * as React from 'react';
 import ReactApexChart from 'react-apexcharts'
 import { APEX_DATA } from './ApexData';
 
-const APEX_OPTIONS = {
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 400,
+  bgcolor: 'background.paper',
+  border: '2px solid #000',
+  boxShadow: 24,
+  pt: 2,
+  px: 4,
+  pb: 3,
+};
+
+const ApexChart = () => {
+  const APEX_OPTIONS = {
     series:[{
         data: APEX_DATA
     }],
@@ -14,6 +30,12 @@ const APEX_OPTIONS = {
           toolbar: {
             autoSelected: 'pan',
             show: false
+          },
+          events: {
+            click: (event, chartContext, config) => {
+              handleOpen()
+              setXAxis(APEX_DATA[config.dataPointIndex].x)
+            },
           }
         },
         colors: ['#546E7A'],
@@ -123,17 +145,84 @@ const APEX_OPTIONS = {
           tickAmount: 2
         }
       },
-}
+    }
 
-const ApexChart = () => {
+    const [open, setOpen] = React.useState(false)
+    const [xAxis, setXAxis] = React.useState(null)
+    const [annotation, setAnnotation] = React.useState('')
+    const [apexOptions, setApexOptions] = React.useState(APEX_OPTIONS)
+
+    const handleOpen = () => {
+      setOpen(true);
+    };
+
+    const submitAnnotation = () => {
+      const newAnnotation = {
+        x: new Date(xAxis).getTime(),
+        strokeDashArray: 0,
+        borderColor: "#775DD0",
+        label: {
+          borderColor: "#775DD0",
+          style: {
+            color: "#fff",
+            background: "#775DD0"
+          },
+          text: annotation
+        }
+      }
+
+      const newArray = apexOptions.options.annotations.xaxis.slice(); // Create a copy
+      newArray.push(newAnnotation);
+
+      setApexOptions({
+        ...apexOptions,
+        options: {
+          ...apexOptions.options,
+          annotations: {
+            ...apexOptions.options.annotations,
+            xaxis: newArray
+          }
+        }
+      })
+      handleClose()
+    }
+    React.useEffect(() => {
+      console.log(apexOptions)
+    }, [apexOptions])
+
+    const handleClose = () => {
+      setOpen(false);
+      setAnnotation('')
+      setXAxis(null)
+    };
+
+    const newAnnotation = (e) => {
+      setAnnotation(e.target.value)
+    }
+
     return(
         <div id="wrapper">
             <div id="chart-line2">
-                <ReactApexChart options={APEX_OPTIONS.options} series={APEX_OPTIONS.series} type="line" height={230} />
+                <ReactApexChart 
+                options={apexOptions.options} 
+                series={apexOptions.series} type="line" height={230} />
             </div>
             <div id="chart-line">
-                <ReactApexChart options={APEX_OPTIONS.optionsLine} series={APEX_OPTIONS.seriesLine} type="area" height={130} />
+                <ReactApexChart 
+                options={apexOptions.optionsLine} 
+                series={apexOptions.seriesLine} type="area" height={130} />
             </div>
+            <Modal
+              open={open}
+              onClose={handleClose}
+            >
+              <Box sx={{ ...style, width: 400 }}>
+                <h2 id="parent-modal-title">What annotation would you like to add?</h2>
+                <TextField id="standard-basic" label="Annotation" variant="standard"
+                  onChange={e => newAnnotation(e)} />
+                <Button disabled={!annotation} variant="contained" onClick={() => submitAnnotation()}>Add Annotation</Button>
+              </Box>
+            </Modal>
         </div>
     )
 }
